@@ -2,6 +2,11 @@
 layout: post.njk
 title: First Post
 date: 2025-05-27
+excerpt: "Welcome to my blog!"
+tags:
+  - portfolio
+  - math
+  - eleventy
 ---
 Welcome to my blog! Here’s some math: $E = mc^2$.
 

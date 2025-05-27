@@ -7,13 +7,23 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+    
       - uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
       - uses: actions/setup-node@v3
         with:
           node-version: 20
+
       - run: npm install
-      - run: npm run build
+
+      - name: Build Eleventy
+        run: ELEVENTY_ENV=production npm run build
+
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

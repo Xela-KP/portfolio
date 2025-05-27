@@ -1,0 +1,9 @@
+{
+    "eleventyExcludeFromCollections": true,
+    "pagination": {
+        "data": "collections.tagList",
+        "size": 1,
+        "alias": "tag"
+    },
+    "layout": "tags/tag.njk"
+}
