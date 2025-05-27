@@ -4,10 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "eleventy",
+    "start": "eleventy --serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Alexander King Perocho",
   "license": "ISC",
   "devDependencies": {
     "@11ty/eleventy": "^3.1.0"
