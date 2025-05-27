@@ -1,0 +1,8 @@
+{% extends "./base.njk" %}
+{% block content %}
+  <article>
+    <h1>{{ title }}</h1>
+    <p><small>{{ date | date("MMMM d, yyyy") }}</small></p>
+    {{ content | safe }}
+  </article>
+{% endblock %}
