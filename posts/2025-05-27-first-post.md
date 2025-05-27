@@ -7,7 +7,7 @@ Welcome to my blog! Here’s some math: $E = mc^2$.
 
 <!-- Giscus comments -->
 <script src="https://giscus.app/client.js"
-        data-repo="yourusername/my-portfolio"
+        data-repo="Xela-KP/portfolio"
         data-repo-id="…"
         data-category="General"
         data-category-id="…"
