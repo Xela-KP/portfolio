@@ -17,10 +17,10 @@
                                 <span class="read-more">Read more →</span>
                             </div>
                             <div class="project-image">
-                                <img src="{{ project.data.image or '/images/default-project.jpg' }}" 
+                                <img src="{{ project.data.image | url }}" 
                          alt="{{ project.data.title }}"
                          class="static-image">
-                                <img src="{{ project.data.gif or project.data.image or '/images/default-project.gif' }}" 
+                                <img src="{{ project.data.gif or project.data.image | url }}" 
                          alt="{{ project.data.title }}"
                          class="hover-gif"
                          loading="lazy">
