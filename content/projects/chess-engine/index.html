@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Building a Chess Engine in C++ | My Portfolio</title>
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="/styles/main.css">
+
+        <!-- Prismjs -->
+        <link href="https://unpkg.com/prismjs@1.20.0/themes/prism-okaidia.css" rel="stylesheet"/>
+
+        <!-- Scripts -->
+        <script src="/scripts/components/theme-toggle.js" defer></script>
+        <script src="/scripts/components/tabs.js" defer></script>
+        <script src="/scripts/components/project-image-loader.js" defer></script>
+        <script src="/scripts/components/code-blocks.js" defer></script>
+
+        <!-- Primary Meta Tags -->
+        <meta name="description" content="My portfolio and blog about software development, Eleventy, and more">
+        <meta name="author"      content="Alexander King Perocho">
+
+        <!-- KaTeX -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body,{
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$',  right: '$',  display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ]
+        });"></script>
+    </head>
+
+    <body>
+        <header class="site-header">
+            <nav>
+                <a href="/">Home</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌓</button>
+            </nav>
+        </header>
+        <main>
+            <header class="post-header">
+    <h1>Building a Chess Engine in C++</h1>
+    <p class="post-excerpt">A chess engine written in C++ using bitboard &amp; OOP.</p>
+    <small>
+        <b>3 min read</b>
+    </small>
+</header>
+<article>
+    <h1>Why Bitboards?</h1>
+<ul>
+<li><strong>Speed:</strong> Bitwise operations on 64-bit integers are extremely fast.</li>
+<li><strong>Clarity:</strong> A single <code>uint64_t</code> holds one piece type’s positions.</li>
+<li><strong>Parallelism:</strong> You can represent entire move sets or masks in one register.</li>
+</ul>
+<p><em>Analogy:</em> Think of the 8×8 chessboard as a checkerboard painting. Each bit in a 64-bit integer is like one square: either painted (1) or blank (0).</p>
+<h2>Understanding Bitboards</h2>
+<p>A <strong>bitboard</strong> is simply a 64-bit unsigned integer (<code>uint64_t</code> in C++). Each bit corresponds to one square on the chessboard:</p>
+<pre><code>bit 63 ◄ A8  B8  C8 ... H8 ► bit 56
+...
+bit  7 ◄ A1  B1  C1 ... H1 ► bit  0
+</code></pre>
+<ul>
+<li><strong>LSB (bit 0):</strong> A1</li>
+<li><strong>MSB (bit 63):</strong> H8</li>
+</ul>
+<p>You will typically maintain one bitboard for each piece type and side (e.g., white pawns, black knights, etc.).</p>
+<h2>Mapping Squares to Bits</h2>
+<p>Define an enum or constants for square indices:</p>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">enum</span> <span class="token class-name">Square</span> <span class="token punctuation">{</span>
+    A1<span class="token punctuation">,</span> B1<span class="token punctuation">,</span> C1<span class="token punctuation">,</span> D1<span class="token punctuation">,</span> E1<span class="token punctuation">,</span> F1<span class="token punctuation">,</span> G1<span class="token punctuation">,</span> H1<span class="token punctuation">,</span>
+    A2<span class="token punctuation">,</span> B2<span class="token punctuation">,</span> <span class="token comment">/* ... */</span> H8<span class="token punctuation">,</span>
+    NO_SQ
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">inline</span> <span class="token keyword">uint64_t</span> <span class="token function">square_bitboard</span><span class="token punctuation">(</span><span class="token keyword">int</span> sq<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token keyword">uint64_t</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&lt;&lt;</span> sq<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p><em>Real-world analogy:</em> If squares are mailboxes numbered 0–63, <code>square_bitboard(sq)</code> is how you drop a letter in mailbox <code>sq</code>.</p>
+<h2>Basic Bitboard Operations</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>C++ Code</th>
+<th>Meaning</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AND</td>
+<td><code>bb &amp; mask</code></td>
+<td>Intersection</td>
+<td></td>
+</tr>
+<tr>
+<td>OR</td>
+<td>`bb</td>
+<td>mask`</td>
+<td>Union</td>
+</tr>
+<tr>
+<td>XOR</td>
+<td><code>bb ^ mask</code></td>
+<td>Toggle</td>
+<td></td>
+</tr>
+<tr>
+<td>NOT</td>
+<td><code>~bb</code></td>
+<td>Inversion</td>
+<td></td>
+</tr>
+<tr>
+<td>SHIFT</td>
+<td><code>bb &lt;&lt; n</code>, <code>bb &gt;&gt; n</code></td>
+<td>Slide north/east/south/west</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">uint64_t</span> all_white <span class="token operator">=</span> white_pawns <span class="token operator">|</span> white_knights <span class="token operator">|</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">;</span>
+<span class="token keyword">uint64_t</span> empty <span class="token operator">=</span> <span class="token operator">~</span><span class="token punctuation">(</span>all_white <span class="token operator">|</span> all_black<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<h2>Initializing the Board</h2>
+<p>Set starting positions using literal bitboards:</p>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">const</span> <span class="token keyword">uint64_t</span> START_WHITE_PAWNS <span class="token operator">=</span> <span class="token number">0x000000000000FF00ULL</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token keyword">uint64_t</span> START_BLACK_PAWNS <span class="token operator">=</span> <span class="token number">0x00FF000000000000ULL</span><span class="token punctuation">;</span>
+<span class="token comment">// ... other pieces similarly</span>
+
+<span class="token keyword">struct</span> <span class="token class-name">Position</span> <span class="token punctuation">{</span>
+    <span class="token keyword">uint64_t</span> white_pawns<span class="token punctuation">,</span> white_rooks<span class="token punctuation">,</span> <span class="token comment">/* ... */</span><span class="token punctuation">;</span>
+    <span class="token keyword">uint64_t</span> black_pawns<span class="token punctuation">,</span> black_rooks<span class="token punctuation">,</span> <span class="token comment">/* ... */</span><span class="token punctuation">;</span>
+    <span class="token keyword">bool</span> white_to_move<span class="token punctuation">;</span>
+    <span class="token comment">// castling rights, en passant square, etc.</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">void</span> <span class="token function">init_starting_position</span><span class="token punctuation">(</span>Position <span class="token operator">&amp;</span>pos<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    pos<span class="token punctuation">.</span>white_pawns   <span class="token operator">=</span> START_WHITE_PAWNS<span class="token punctuation">;</span>
+    pos<span class="token punctuation">.</span>white_rooks   <span class="token operator">=</span> <span class="token number">0x0000000000000081ULL</span><span class="token punctuation">;</span>
+    <span class="token comment">// ...</span>
+    pos<span class="token punctuation">.</span>white_to_move <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2>Move Generation Basics</h2>
+<h3>Pawns</h3>
+<ul>
+<li><strong>White pawn pushes:</strong> <code>(pawns &lt;&lt; 8) &amp; empty</code></li>
+<li><strong>Double pushes:</strong> <code>((pawns &lt;&lt; 8) &amp; empty) &lt;&lt; 8 &amp; empty &amp; rank4_mask</code></li>
+<li><strong>Captures:</strong> <code>(pawns &lt;&lt; 7 &amp; black_pieces &amp; ~file_h_mask) | (pawns &lt;&lt; 9 &amp; black_pieces &amp; ~file_a_mask)</code></li>
+</ul>
+<h3>Knights</h3>
+<p>Precompute a lookup table of knight attacks:</p>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">uint64_t</span> knight_attacks<span class="token punctuation">[</span><span class="token number">64</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+<span class="token keyword">void</span> <span class="token function">init_knight_attacks</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> sq <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> sq <span class="token operator">&lt;</span> <span class="token number">64</span><span class="token punctuation">;</span> <span class="token operator">++</span>sq<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">uint64_t</span> b <span class="token operator">=</span> <span class="token function">square_bitboard</span><span class="token punctuation">(</span>sq<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// shifts: ±17, ±15, ±10, ±6 with file-edge masks</span>
+        knight_attacks<span class="token punctuation">[</span>sq<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">compute_knight_attacks</span><span class="token punctuation">(</span>b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Kings</h3>
+<p>Similar to knights: 8-direction shifts by 1.</p>
+<h2>Sliding Piece Attacks</h2>
+<h3>Naïve Ray Casting</h3>
+<p>For each direction, shift until you hit blocker:</p>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">uint64_t</span> <span class="token function">slider_attacks</span><span class="token punctuation">(</span><span class="token keyword">int</span> sq<span class="token punctuation">,</span> <span class="token keyword">uint64_t</span> occupied<span class="token punctuation">,</span> <span class="token keyword">const</span> <span class="token keyword">int</span> dirs<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token keyword">int</span> dir_count<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">uint64_t</span> attacks <span class="token operator">=</span> <span class="token number">0ULL</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> dir_count<span class="token punctuation">;</span> <span class="token operator">++</span>i<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">int</span> dir <span class="token operator">=</span> dirs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> t <span class="token operator">=</span> sq<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            t <span class="token operator">+=</span> dir<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">offboard</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">break</span><span class="token punctuation">;</span>
+            attacks <span class="token operator">|=</span> <span class="token function">square_bitboard</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>occupied <span class="token operator">&amp;</span> <span class="token function">square_bitboard</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">break</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> attacks<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Magic Bitboards (Advanced)</h3>
+<p>Use precomputed magic multipliers to index attack tables in O(1).</p>
+<h2>Making and Unmaking Moves</h2>
+<p>Maintain a <strong>move stack</strong> that saves:</p>
+<ul>
+<li>Piece bitboards</li>
+<li>Side to move</li>
+<li>Castling rights</li>
+<li>En passant square</li>
+<li>Half-move clock</li>
+</ul>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">struct</span> <span class="token class-name">State</span> <span class="token punctuation">{</span>
+    <span class="token keyword">uint64_t</span> white_pawns<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">;</span>
+    <span class="token keyword">bool</span> white_to_move<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> castling_rights<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> en_passant_sq<span class="token punctuation">;</span>
+    <span class="token keyword">int</span> halfmove_clock<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+std<span class="token double-colon punctuation">::</span>vector<span class="token operator">&lt;</span>State<span class="token operator">></span> history<span class="token punctuation">;</span>
+
+<span class="token keyword">void</span> <span class="token function">make_move</span><span class="token punctuation">(</span><span class="token keyword">const</span> Move <span class="token operator">&amp;</span>m<span class="token punctuation">,</span> Position <span class="token operator">&amp;</span>pos<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    history<span class="token punctuation">.</span><span class="token function">push_back</span><span class="token punctuation">(</span>pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">apply_move_bits</span><span class="token punctuation">(</span>m<span class="token punctuation">,</span> pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    pos<span class="token punctuation">.</span>white_to_move <span class="token operator">=</span> <span class="token operator">!</span>pos<span class="token punctuation">.</span>white_to_move<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">unmake_move</span><span class="token punctuation">(</span>Position <span class="token operator">&amp;</span>pos<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    pos <span class="token operator">=</span> history<span class="token punctuation">.</span><span class="token function">back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    history<span class="token punctuation">.</span><span class="token function">pop_back</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h2>Setting Up Search and Evaluation</h2>
+<h3>Minimax &amp; Alpha–Beta</h3>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">int</span> <span class="token function">alpha_beta</span><span class="token punctuation">(</span>Position <span class="token operator">&amp;</span>pos<span class="token punctuation">,</span> <span class="token keyword">int</span> depth<span class="token punctuation">,</span> <span class="token keyword">int</span> alpha<span class="token punctuation">,</span> <span class="token keyword">int</span> beta<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>depth <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">return</span> <span class="token function">evaluate</span><span class="token punctuation">(</span>pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">generate_moves</span><span class="token punctuation">(</span>pos<span class="token punctuation">,</span> moves<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">auto</span> <span class="token operator">&amp;</span>m <span class="token operator">:</span> moves<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">make_move</span><span class="token punctuation">(</span>m<span class="token punctuation">,</span> pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> score <span class="token operator">=</span> <span class="token operator">-</span><span class="token function">alpha_beta</span><span class="token punctuation">(</span>pos<span class="token punctuation">,</span> depth <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token operator">-</span>beta<span class="token punctuation">,</span> <span class="token operator">-</span>alpha<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">unmake_move</span><span class="token punctuation">(</span>pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>score <span class="token operator">>=</span> beta<span class="token punctuation">)</span> <span class="token keyword">return</span> beta<span class="token punctuation">;</span>
+        alpha <span class="token operator">=</span> std<span class="token double-colon punctuation">::</span><span class="token function">max</span><span class="token punctuation">(</span>alpha<span class="token punctuation">,</span> score<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> alpha<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<h3>Simple Evaluation Function</h3>
+<ul>
+<li><strong>Material:</strong> Sum of piece values (<code>P=100</code>, <code>N=300</code>, <code>B=300</code>, <code>R=500</code>, <code>Q=900</code>)</li>
+<li><strong>Piece-square tables</strong> for positional bonuses</li>
+</ul>
+<h2>Perft Testing</h2>
+<p><code>perft(depth)</code> counts leaf nodes at given depth:</p>
+<pre class="language-cpp"><code class="language-cpp"><span class="token keyword">uint64_t</span> <span class="token function">perft</span><span class="token punctuation">(</span>Position <span class="token operator">&amp;</span>pos<span class="token punctuation">,</span> <span class="token keyword">int</span> depth<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>depth <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token keyword">return</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token function">generate_moves</span><span class="token punctuation">(</span>pos<span class="token punctuation">,</span> moves<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">uint64_t</span> nodes <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">auto</span> <span class="token operator">&amp;</span>m <span class="token operator">:</span> moves<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">make_move</span><span class="token punctuation">(</span>m<span class="token punctuation">,</span> pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        nodes <span class="token operator">+=</span> <span class="token function">perft</span><span class="token punctuation">(</span>pos<span class="token punctuation">,</span> depth <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">unmake_move</span><span class="token punctuation">(</span>pos<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> nodes<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Use known perft numbers to validate correctness at depths 1–6.</p>
+<h2>Optimizations &amp; Tips</h2>
+<ul>
+<li><strong>Use <code>__builtin_popcountll</code></strong> for fast bit counts.</li>
+<li><strong>Bit scan forward/reverse</strong>: <code>__builtin_ctzll</code>, <code>__builtin_clzll</code>.</li>
+<li><strong>Move ordering:</strong> captures first, history heuristic.</li>
+<li><strong>Transposition table:</strong> store previously evaluated positions.</li>
+</ul>
+<h2>Putting It All Together</h2>
+<ol>
+<li><strong>Initialization:</strong> load starting position, precompute attack tables.</li>
+<li><strong>Main loop:</strong> parse commands (UCI), set options.</li>
+<li><strong>Search:</strong> run alpha–beta to a fixed depth or time limit.</li>
+<li><strong>Output:</strong> best move, PV lines, evaluation score.</li>
+<li><strong>Repeat</strong> on each opponent move.</li>
+</ol>
+<h2>Wrapping Up</h2>
+<p>Congratulations! 🎉 You now have a clear roadmap to build a chess engine in C++ using bitboards. While this guide covers the core concepts, real-world engines add many more enhancements: quiescence search, iterative deepening, advanced pruning, time management, and more.</p>
+<p>Keep experimenting, profiling, and refining!</p>
+<h2>TL;DR</h2>
+<ul>
+<li><strong>Bitboards:</strong> 64-bit ints where each bit is a square.</li>
+<li><strong>Move Generation:</strong> precompute simple tables for knights/kings; use shifts for pawns; ray-cast or magic tables for sliders.</li>
+<li><strong>Search:</strong> alpha–beta minimax with simple evaluation.</li>
+<li><strong>Test:</strong> perft for correctness, then optimize (popcount, bit-scan, transposition tables).</li>
+</ul>
+<p>Build step-by-step, and before you know it, you’ll have a fast, competitive chess engine! 🚀</p>
+
+</article>
+<hr/>
+<footer class="post-footer">
+    <!-- _includes/giscus.njk -->
+<div class="giscus-comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Xela-KP/portfolio"
+        data-repo-id="R_kgDOOxfErA"
+        data-category="General"
+        data-category-id="DIC_kwDOOxfErM4Cq0g0"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="dark"
+        data-lang="en"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async></script>
+</div>
+</footer>
+        </main>
+        <hr/>
+        <footer>
+            &copy; 2025 PerochoDev
+            <!-- GoatCounter -->
+            <script data-goatcounter="https://aperocho.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        </footer>
+    </body>
+</html>
