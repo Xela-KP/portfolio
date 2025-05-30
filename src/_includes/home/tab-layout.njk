@@ -9,7 +9,7 @@
             <ul class="project-list">
                 {% for project in collections.projects %}
                     <li>
-                        <a class="project-card" href="{{ project.url }}">
+                        <a class="project-card" href="{{ project.url | url }}">
                             <div class="project-content">
                                 <h2>{{ project.data.title }}</h2>
                                 <p class="project-date">{{ project.date | date("MMMM d, yyyy") }}</p>
