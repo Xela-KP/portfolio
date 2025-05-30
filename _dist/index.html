@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Home | My Portfolio</title>
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="/styles/main.css">
+
+        <!-- Prismjs -->
+        <link href="https://unpkg.com/prismjs@1.20.0/themes/prism-okaidia.css" rel="stylesheet"/>
+
+        <!-- Scripts -->
+        <script src="/scripts/components/theme-toggle.js" defer></script>
+        <script src="/scripts/components/tabs.js" defer></script>
+        <script src="/scripts/components/project-image-loader.js" defer></script>
+        <script src="/scripts/components/code-blocks.js" defer></script>
+
+        <!-- Primary Meta Tags -->
+        <meta name="description" content="My portfolio and blog about software development, Eleventy, and more">
+        <meta name="author"      content="Alexander King Perocho">
+
+        <!-- KaTeX -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body,{
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$',  right: '$',  display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ]
+        });"></script>
+    </head>
+
+    <body>
+        <header class="site-header">
+            <nav>
+                <a href="/">Home</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌓</button>
+            </nav>
+        </header>
+        <main>
+            <article>
+    <header class="intro">
+    <img src="/assets/img/avatar.jpg" alt="Alexander King Perocho" class="intro-avatar">
+    <div class="intro-text">
+        <h1>Hi, I’m Alexander King Perocho</h1>
+        <p>I’m a Computer Science student passionate about building high-performance software, writing about tech, and learning new things every day. Welcome to my portfolio!</p>
+    </div>
+</header>
+</article>
+<article>
+    <div class="tabs" data-tab-container>
+    <nav class="tab-nav">
+        <button class="tab-button active" data-tab="projects">Projects</button>
+        <button class="tab-button" data-tab="about">About</button>
+    </nav>
+
+    <div class="tab-content">
+        <div class="tab-panel active" data-panel="projects">
+            <ul class="project-list">
+                
+                    <li>
+                        <a class="project-card" href="/content/projects/website/">
+                            <div class="project-content">
+                                <h2>Building This Website</h2>
+                                <p class="project-date">May 26, 2025</p>
+                                <p class="project-excerpt">How I built this Website.</p>
+                                <span class="read-more">Read more →</span>
+                            </div>
+                            <div class="project-image">
+                                <img src="/assets/img/projects/website.png" 
+                         alt="Building This Website"
+                         class="static-image">
+                                <img src="/assets/img/projects/website.png" 
+                         alt="Building This Website"
+                         class="hover-gif"
+                         loading="lazy">
+                            </div>
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="project-card" href="/content/projects/chess-engine/">
+                            <div class="project-content">
+                                <h2>Building a Chess Engine in C++</h2>
+                                <p class="project-date">May 20, 2025</p>
+                                <p class="project-excerpt">A chess engine written in C++ using bitboard &amp; OOP.</p>
+                                <span class="read-more">Read more →</span>
+                            </div>
+                            <div class="project-image">
+                                <img src="/assets/img/projects/chess-engine.png" 
+                         alt="Building a Chess Engine in C++"
+                         class="static-image">
+                                <img src="/assets/img/projects/chess-engine.gif" 
+                         alt="Building a Chess Engine in C++"
+                         class="hover-gif"
+                         loading="lazy">
+                            </div>
+                        </a>
+                    </li>
+                
+            </ul>
+        </div>
+
+        <div class="tab-panel" data-panel="about">
+            <div class="timeline-container">
+                <ul class="timeline-list">
+                    <li>
+                        <div>Present</div>
+                        <p>Mentorship under @HenriKuiper for @zDevOps</p>
+                        <p>Open Source Contributor for mfpandas</p>
+                        <p>Pursuing IBM zXplore Certifications for z/OS</p>
+                    </li>
+                    <li>
+                        <div>2025</div>
+                        <p>AWS Certified Cloud Practitioner</p>
+                    </li>
+                    <li>
+                        <div>2023</div>
+                        <p>@WesternUniversity for Computer Science and Software Engineering.</p>
+                    </li>
+                    <li>
+                        <div>2020</div>
+                        <p>@UniversityOfToronto for Computer Science and Business Administration.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</article>
+        </main>
+        <hr/>
+        <footer>
+            &copy; 2025 PerochoDev
+            <!-- GoatCounter -->
+            <script data-goatcounter="https://aperocho.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+        </footer>
+    </body>
+</html>
