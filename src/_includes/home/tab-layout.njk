@@ -18,12 +18,12 @@
                             </div>
                             <div class="project-image">
                                 <img src="{{ project.data.image | url }}" 
-                         alt="{{ project.data.title }}"
-                         class="static-image">
-                                <img src="{{ project.data.gif or project.data.image | url }}" 
-                         alt="{{ project.data.title }}"
-                         class="hover-gif"
-                         loading="lazy">
+                                    alt="{{ project.data.title }}"
+                                    class="static-image">
+                                <img src="{{ project.data.gif | url if project.data.gif else project.data.image | url }}" 
+                                    alt="{{ project.data.title }}"
+                                    class="hover-gif"
+                                    loading="lazy">
                             </div>
                         </a>
                     </li>
