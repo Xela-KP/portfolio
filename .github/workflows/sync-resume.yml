@@ -3,8 +3,8 @@ name: Sync Resume from Google Drive
 
 on:
   schedule:
-    # Run every day at 9 AM UTC (adjust timezone as needed)
-    - cron: '0 9 * * *'
+    # Run every day at 9 AM UTC
+    # - cron: '0 9 * * *'
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -25,6 +25,8 @@ jobs:
     - name: Install dependencies
       run: |
         pip install google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
+        sudo apt update
+        sudo apt install gh -y
 
     - name: Create sync script
       run: |
@@ -136,17 +138,24 @@ jobs:
         git commit -m "🔄 Auto-update resume from Google Drive" || exit 0
         git push
 
-    - name: Create release (optional)
+    - name: Trigger Build and Deploy Workflow
       if: steps.check_changes.outputs.file_changed == 'true'
-      uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: resume-update-${{ github.run_number }}
-        release_name: Resume Update ${{ github.run_number }}
-        body: |
-          🔄 Resume automatically updated from Google Drive
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh workflow run "Build and Deploy" --ref main
+
+    # - name: Create release (optional)
+    #   if: steps.check_changes.outputs.file_changed == 'true'
+    #   uses: actions/create-release@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: resume-update-${{ github.run_number }}
+    #     release_name: Resume Update ${{ github.run_number }}
+    #     body: |
+    #       🔄 Resume automatically updated from Google Drive
           
-          Updated on: ${{ github.event.head_commit.timestamp }}
-        draft: false
-        prerelease: false
+    #       Updated on: ${{ github.event.head_commit.timestamp }}
+    #     draft: false
+    #     prerelease: false
