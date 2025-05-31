@@ -1,16 +1,11 @@
 /* Article container */
 article {
-    background: var(--color-primary-50);
+    background: var(--color-article-bg);
+    border: 1px solid var(--color-article-border);
     padding: var(--space-xl);
-    margin: var(--space-md);
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--color-border);
-}
-
-[data-theme="dark"] article {
-    background: #252019;
-    border-color: var(--color-border);
+    box-shadow: var(--color-article-shadow);
+    transition: box-shadow var(--transition-normal);
 }
 
 /* Tables */
