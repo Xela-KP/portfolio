@@ -17,9 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Optional: Pause GIF when not hovering (if it supports it)
+        // Pause GIF when not hovering
         card.addEventListener('mouseleave', () => {
-            // This works for some GIFs - you can remove if not needed
             if (isLoaded) {
                 const currentSrc = hoverGif.src;
                 hoverGif.src = '';
