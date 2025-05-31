@@ -1,17 +1,10 @@
 ---
 layout: "base.njk"
 ---
-<header class="post-header">
-    <h1>{{ title }}</h1>
-    <p class="post-excerpt">{{ excerpt }}</p>
-    <small>
-        <b>{{ content | readingTime }} read</b>
-    </small>
-</header>
+
+{% include "pages/blog-post/header.njk" %}
 <article>
     {{ content | safe }}
 </article>
 <hr/>
-<footer class="post-footer">
-    {% include "giscus.njk" %}
-</footer>
+{% include "pages/blog-post/footer.njk" %}

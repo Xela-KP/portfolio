@@ -1,4 +1,3 @@
-// Add copy buttons to Prism code blocks
 document.addEventListener('DOMContentLoaded', function () {
     // Find all pre elements that contain code (Prism structure)
     const preElements = document.querySelectorAll('pre[class*="language-"]');
@@ -80,37 +79,4 @@ document.addEventListener('DOMContentLoaded', function () {
         pre.style.position = 'relative';
         pre.appendChild(copyButton);
     });
-});
-
-// Fallback copy function for older browsers
-function fallbackCopy(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-
-    try {
-        document.execCommand('copy');
-    } catch (err) {
-        console.error('Fallback copy failed: ', err);
-    }
-
-    document.body.removeChild(textArea);
-}
-
-// Optional: Add keyboard shortcut (Ctrl/Cmd + C when hovering over code block)
-document.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        const hoveredElement = document.querySelector('pre[class*="language-"]:hover');
-        if (hoveredElement) {
-            const copyButton = hoveredElement.querySelector('.copy-button');
-            if (copyButton) {
-                e.preventDefault();
-                copyButton.click();
-            }
-        }
-    }
 });
