@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <title>Arch Linux Update Script</title>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="My portfolio and blog about software development, Eleventy, and more">
+<meta name="author"      content="Alexander King Perocho">
+    <link rel="icon" type="image/x-icon" href="/portfolio/assets/icons/favicon.ico">
+<link rel="android-chrome-512x512" sizes="512x512" href="/portfolio/assets/icons/android-chrome-512x512.png">
+<link rel="android-chrome-192x192" sizes="192x192" href="/portfolio/assets/icons/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/portfolio/assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/portfolio/assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/portfolio/assets/icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="/portfolio/styles/main.css">
+    <script src="/portfolio/scripts/components/theme-toggle.js" defer></script>
+<script src="/portfolio/scripts/components/tabs.js" defer></script>
+<script src="/portfolio/scripts/components/project-image-loader.js" defer></script>
+<script src="/portfolio/scripts/components/code-blocks.js" defer></script>
+    <!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body,{
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$',  right: '$',  display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ]
+        });"></script>
+
+<!-- Prismjs -->
+<link href="https://unpkg.com/prismjs@1.20.0/themes/prism-okaidia.css" rel="stylesheet"/>
+
+<!-- goatcounter -->
+<script data-goatcounter="https://aperocho.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+    <body>
+    <header class="site-header">
+    <nav>
+        <a class="button" href="/portfolio/"></a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌓</button>
+    </nav>
+</header>
+    <main>
+        
+<header class="post-header">
+    <h1>Arch Linux Update Script</h1>
+    <p class="post-excerpt">Automating Arch Linux System Updates with systemd + KDE</p>
+    <small>
+        <b>3 min read</b>
+    </small>
+</header>
+<article>
+    <h1>Context</h1>
+<p>I recently installed Arch Linux with KDE on my PC, as I wanted to develop my skills as an actual developer. Manually updating my system every few days started to feel like a chore. I decided to automate my system updates to streamline maintenance and ensure my system stays up-to-date.</p>
+<hr>
+<h1>Dependencies</h1>
+<p>This is a list of the dependencies I had to manually install with <code>sudo pacman -S ...</code> to get my script to run properly.</p>
+<table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>visudo</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>reflector + rsync</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>paccache</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>notify-send</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>Setup</h1>
+<h2>Shell-Scripting</h2>
+<p>First, I got all the scripting files/directories I needed ready. I made a designated <code>scripting/</code> directory to store the update script and any future scripts I create.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token comment"># Script Files</span>
+<span class="token function">mkdir</span> ~/scripts <span class="token comment"># Create a directory that houses all of my scripts</span>
+<span class="token function">touch</span> ~/scripts/arch-update.sh <span class="token comment"># Create the script file</span>
+<span class="token function">chmod</span> +x arch-update.sh <span class="token comment"># Make script executable</span></code></pre>
+<p>I knew that the nature of the script (system updates) would need super user privileges, so I went ahead and gave the dependencies <code>sudo</code> permissions without requiring confirmation by editing the <code>sudoers</code> file with <code>visudo</code>.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token function">sudo</span> visudo</code></pre>
+<p>I added the line:
+<code>&lt;username&gt; ALL=(ALL) NOPASSWD: /usr/bin/pacman, /usr/bin/paccache, /usr/bin/reflector</code></p>
+<p>which allowed me to run <code>pacman</code>, <code>paccache</code>, and <code>reflector</code> commands without requiring me to enter my password.</p>
+<p>Next, I wrote the actual script.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token builtin class-name">set</span> <span class="token parameter variable">-euo</span> pipefail
+
+<span class="token comment"># Logging</span>
+<span class="token assign-left variable">LOGFILE</span><span class="token operator">=</span><span class="token string">"/home/&lt;username>/.local/logs/arch-update.log"</span>
+<span class="token function">mkdir</span> <span class="token parameter variable">-p</span> <span class="token string">"<span class="token variable"><span class="token variable">$(</span><span class="token function">dirname</span> <span class="token string">"<span class="token variable">$LOGFILE</span>"</span><span class="token variable">)</span></span>"</span>
+<span class="token builtin class-name">exec</span> <span class="token operator">></span> <span class="token operator">></span><span class="token punctuation">(</span><span class="token function">tee</span> <span class="token parameter variable">-a</span> <span class="token string">"<span class="token variable">$LOGFILE</span>"</span><span class="token punctuation">)</span> <span class="token operator"><span class="token file-descriptor important">2</span>></span><span class="token file-descriptor important">&amp;1</span>
+
+<span class="token comment"># Begin System Update</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"[<span class="token variable"><span class="token variable">$(</span><span class="token function">date</span><span class="token variable">)</span></span>] Starting System Update..."</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"[*] Updating Mirrors..."</span>
+reflector <span class="token parameter variable">--country</span> Canada <span class="token parameter variable">--completion</span> <span class="token number">100</span> <span class="token parameter variable">--latest</span> <span class="token number">10</span> --download-timeout <span class="token number">60</span> <span class="token parameter variable">--sort</span> rate <span class="token parameter variable">--save</span> /etc/pacman.d/mirrorlist
+<span class="token builtin class-name">echo</span> <span class="token string">"[*] Running System Update"</span>
+pacman <span class="token parameter variable">-Syu</span> <span class="token parameter variable">--noconfirm</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"[*] Cleaning up old package cache..."</span>
+paccache <span class="token parameter variable">-r</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"[<span class="token variable"><span class="token variable">$(</span><span class="token function">date</span><span class="token variable">)</span></span>] Update Complete"</span>
+
+<span class="token comment"># Desktop Notification</span>
+<span class="token assign-left variable">USER_ID</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span><span class="token function">id</span> <span class="token parameter variable">-u</span> <span class="token operator">&lt;</span>username<span class="token operator">></span><span class="token variable">)</span></span>
+<span class="token builtin class-name">export</span> <span class="token assign-left variable"><span class="token environment constant">DBUS_SESSION_BUS_ADDRESS</span></span><span class="token operator">=</span><span class="token string">"unix:path=/run/user/<span class="token variable">$USER_ID</span>/bus"</span>
+<span class="token function">sudo</span> <span class="token parameter variable">-u</span> <span class="token operator">&lt;</span>username<span class="token operator">></span> <span class="token assign-left variable"><span class="token environment constant">DISPLAY</span></span><span class="token operator">=</span>:0 <span class="token assign-left variable"><span class="token environment constant">DBUS_SESSION_BUS_ADDRESS</span></span><span class="token operator">=</span><span class="token environment constant">$DBUS_SESSION_BUS_ADDRESS</span> <span class="token function">notify-send</span> <span class="token string">"System Update"</span> <span class="token string">"Update completed!"</span></code></pre>
+<p>I leaned that the logging portion of the script essentially enabled this:</p>
+<pre class="language-plaintext"><code class="language-plaintext">          ┌────────────┐
+stdout ─▶│            │
+stderr ─▶│ tee -a log │ ──▶ Terminal
+          │            │ ──▶ log file
+          └────────────┘</code></pre>
+<h2>Logging</h2>
+<p>I wanted to log the script to keep persisted records of what the script does, when it runs, and any errors that occur during execution for debugging purposes and so I could better understand the behavior of the script. I made sure to keep the naming of the files consistent with what I wrote in the update script.</p>
+<p>I created a designated <code>logs/</code> directory to keep any log files for the update script and any future scripts I create.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token function">mkdir</span> ~/.local/logs <span class="token comment"># create a local directory for storing mmy log files.</span>
+<span class="token function">touch</span> ~/.local/logs/arch-update.log <span class="token comment"># create the log file.</span>
+<span class="token function">chmod</span> <span class="token number">664</span> ~/.local/logs/arch-update.log <span class="token comment"># Give owner &amp; group rw permissions and other read-only permissions.</span></code></pre>
+<h2>Automated Scheduled Execution</h2>
+<p>The entire purpose of making the script was to automate any updates my system needed, so naturally I set up the required files for performing scheduled execution of the update script. I made sure to keep my naming consistent to avoid any confusion.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token comment"># Create service and timer for scheduled run:</span>
+<span class="token function">touch</span> /etc/systemd/system/arch-update.service <span class="token comment"># Create an 'update' Service that will execute arch-update.sh.</span>
+<span class="token function">touch</span> /etc/systemd/system/arch-update.timer <span class="token comment"># Create a timer to schedule when the service runs.</span></code></pre>
+<pre class="language-ini"><code class="language-ini"><span class="token comment">; arch-update.service</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Unit</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Description</span><span class="token punctuation">=</span><span class="token value attr-value">Arch Linux System Update</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Service</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Type</span><span class="token punctuation">=</span><span class="token value attr-value">oneshot</span>
+<span class="token key attr-name">ExecStart</span><span class="token punctuation">=</span><span class="token value attr-value">/home/yourusername/scripts/update-arch.sh</span>
+
+<span class="token comment">; [Unit] marks the file as a unit.</span>
+<span class="token comment">; Description shows up in `systemctl status` and `journalctl`</span>
+
+<span class="token comment">; [Service] Mark this unit file as a `systemd` service</span>
+<span class="token comment">; Type Tells `systemd` that the script runs once and exits.</span>
+<span class="token comment">; ExecStart tells `systemd` the command (script) to run when this service starts.</span></code></pre>
+<p>I manually triggered the service to test if it worked</p>
+<pre class="language-bash"><code class="language-bash"><span class="token function">sudo</span> systemctl daemon-reload <span class="token comment"># reread all unit files (Since we created I new service)</span>
+<span class="token function">sudo</span> systemctl start arch-update.service <span class="token comment"># Start the service</span>
+<span class="token function">sudo</span> systemctl status arch-update.service <span class="token comment"># Check the status.</span></code></pre>
+<p>Then I made the schedule/timer for the service:</p>
+<pre class="language-ini"><code class="language-ini"><span class="token comment">; arch-update.timer</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Unit</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Description</span><span class="token punctuation">=</span><span class="token value attr-value">Run Arch Update Script Daily</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Timer</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">OnCalendar</span><span class="token punctuation">=</span><span class="token value attr-value">daily</span>
+<span class="token key attr-name">Persistent</span><span class="token punctuation">=</span><span class="token value attr-value">true</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Install</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">WantedBy</span><span class="token punctuation">=</span><span class="token value attr-value">timers.target</span>
+
+<span class="token comment">; [Unit] marks the file as a unit.</span>
+<span class="token comment">; Description shows up in `systemctl status` and `journalctl`</span>
+
+<span class="token comment">; [Timer] Mark this unit file as a `systemd` scheduled execution of a service.</span>
+<span class="token comment">; OnCalendar is when to run the service.</span>
+<span class="token comment">; Persistent means that the service will run on the next boot if the scheduled time elapsed while the system was off.</span>
+
+<span class="token comment">; [Install] Starts the timer automatically on boot.</span></code></pre>
+<p>And I reloaded <code>systemd</code> to reflect my updates.</p>
+<pre class="language-bash"><code class="language-bash"><span class="token function">sudo</span> systemctl daemon-reexec <span class="token comment"># Rerun `systemd`</span>
+<span class="token function">sudo</span> systemctl daemon-reload <span class="token comment"># Reread all the unit files</span>
+<span class="token function">sudo</span> systemctl <span class="token builtin class-name">enable</span> <span class="token parameter variable">--now</span> arch-update.timer <span class="token comment"># Enable the schedule/timer for the service</span></code></pre>
+
+</article>
+<hr/>
+<footer>
+    <div class="giscus-comments">
+    <script src="https://giscus.app/client.js"
+        data-repo="Xela-KP/portfolio"
+        data-repo-id="R_kgDOOxfErA"
+        data-category="General"
+        data-category-id="DIC_kwDOOxfErM4Cq0g0"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="dark"
+        data-lang="en"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async></script>
+</div>
+</footer>
+    </main>
+    <hr/>
+    <footer>
+    &copy; 2025 PerochoDev
+</footer>
+</body>
+</html>
